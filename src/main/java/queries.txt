@@ -1,0 +1,57 @@
+1. Список игроков, родившихся в определённые годы, с количеством золотых медалей
+Для выполнения этой задачи нам нужно соединить таблицы Players, Results, и Events и отфильтровать данные по критериям (золотые медали и Олимпийские игры 2004 года).
+
+String query = "SELECT YEAR(p.birthdate) as birthYear, COUNT(p.playerId) as playerCount, COUNT(r.result) as goldMedalCount " +
+               "FROM Player p JOIN Result r ON p.playerId = r.playerId " +
+               "JOIN Event e ON r.eventId = e.eventId " +
+               "JOIN Olympics o ON e.olympicId = o.olympicId " +
+               "WHERE r.medal = 'GOLD' AND o.year = 2004 " +
+               "GROUP BY YEAR(p.birthdate)";
+List<Object[]> results = session.createQuery(query).list();
+
+2. Индивидуальные соревнования с ничьей и несколькими золотыми медалями
+Здесь мы ищем события, где было два или более победителей с золотыми медалями.
+
+String query = "SELECT e.name " +
+               "FROM Event e JOIN Result r ON e.eventId = r.eventId " +
+               "WHERE e.isTeamEvent = 0 AND r.medal = 'GOLD' " +
+               "GROUP BY e.eventId " +
+               "HAVING COUNT(r.playerId) > 1";
+List<String> events = session.createQuery(query).list();
+
+3. Игроки, выигравшие хотя бы одну медаль на одной Олимпиаде
+Запрос находит игроков, которые выиграли хотя бы одну медаль.
+
+String query = "SELECT p.name, e.olympicId " +
+               "FROM Player p JOIN Result r ON p.playerId = r.playerId " +
+               "JOIN Event e ON r.eventId = e.eventId " +
+               "GROUP BY p.playerId, e.olympicId " +
+               "HAVING COUNT(r.medal) > 0";
+List<Object[]> players = session.createQuery(query).list();
+
+4. Страна с наибольшим процентом игроков с именами, начинающимися на гласную
+
+String query = "SELECT c.name, (COUNT(p.playerId) / c.population) * 100 as percentage " +
+               "FROM Player p JOIN Country c ON p.countryId = c.countryId " +
+               "WHERE LOWER(p.name) LIKE 'a%' OR LOWER(p.name) LIKE 'e%' OR LOWER(p.name) LIKE 'i%' OR LOWER(p.name) LIKE 'o%' OR LOWER(p.name) LIKE 'u%' " +
+               "GROUP BY c.countryId " +
+               "ORDER BY percentage DESC";
+List<Object[]> countries = session.createQuery(query).setMaxResults(1).list();
+
+5. Для Олимпийских игр 2000 года найдите 5 стран с минимальным соотношением количества групповых медалей к численности населения.
+
+String query = "SELECT new dto.CountryMedalRatioDTO(c.name, COUNT(r.medal), c.population) " +
+                  "FROM Result r " +
+                  "JOIN r.eventId e " +
+                  "JOIN e.olympicId o " +
+                  "JOIN r.playerId p " +
+                  "JOIN p.countryId c " +
+                  "WHERE o.year = 2000 AND " +
+                  "e.isTeamEvent = 1 AND " +
+                  "r.medal IN ('GOLD', 'SILVER', 'BRONZE') " +
+                  "GROUP BY c.name, c.population " +
+                  "ORDER BY COUNT(r.medal) / c.population ASC";
+
+   List<CountryMedalRatioDTO> results = session.createQuery(query, CountryMedalRatioDTO.class)
+                                               .setMaxResults(5)
+                                               .getResultList();
