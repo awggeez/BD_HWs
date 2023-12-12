@@ -7,8 +7,11 @@ SELECT id, bit_length(name) as name, birthday, bit_length(race) AS race
 FROM demographics;
 
 -- 3
-SELECT ascii(substring(name, 1, 1)) as name;
-
+SELECT id,
+       ascii(substring(name, 1, 1)) AS name,
+       birthday,
+       ascii(substring(race, 1, 1)) AS race
+FROM demographics;
 
 -- 4
 SELECT concat_ws(' ', prefix, 'first', 'last', suffix) as title
